@@ -1,3 +1,10 @@
+library(tidyverse)
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(skimr)
+library(janitor)
+
 
 install.packages("tidyversn")
 install.packages("readn")
