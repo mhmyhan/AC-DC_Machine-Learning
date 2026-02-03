@@ -6,7 +6,7 @@ library(skimr)
 library(janitor)
 
 
-install.packages("tidyversn")
+install.packages("tidyverse")
 install.packages("readn")
 install.packages("ggplot2")
 install.packages("dplyr")
