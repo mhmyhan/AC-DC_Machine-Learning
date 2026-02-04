@@ -4,7 +4,7 @@ library(ggplot2)
 library(dplyr)
 library(skimr)
 library(janitor)
-
+library(corrplot)
 
 install.packages("tidyverse")
 install.packages("readn")
@@ -12,3 +12,4 @@ install.packages("ggplot2")
 install.packages("dplyr")
 install.packages("skimr")
 install.packages("janitor")
+install.packages("corrplot")
