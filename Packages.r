@@ -6,6 +6,8 @@ library(skimr)
 library(janitor)
 library(corrplot)
 library(recipes)
+library(janitor)
+
 
 install.packages("tidyverse")
 install.packages("readn")
@@ -15,3 +17,4 @@ install.packages("skimr")
 install.packages("janitor")
 install.packages("corrplot")
 install.packages("recipes")
+install.packages("janitor")
