@@ -58,11 +58,15 @@ cols_to_drop <- c(
       factor(x)
     }))
   
+  df <- df %>%
+    filter(!is.na(.data[[TARGET]]))
+  
+  
   #Train Split
   
   set.seed(42)
   
-  split <- initial_split(df, prop = 0.8)
+  split <- initial_split(df, prop = 0.8, strata = TARGET)
   
   train_raw <- training(split)
   test_raw <- testing(split)
@@ -72,6 +76,8 @@ cols_to_drop <- c(
   rec <- recipe(train_raw) %>%
     update_role(all_of(TARGET), new_role = "outcome") %>%
     update_role(-all_of(TARGET), new_role = "predictor") %>%
+    
+    step_zv(all_predictors()) %>%
     #Missing Values
     step_impute_median(all_numeric_predictors()) %>%
     step_impute_mode(all_nominal_predictors()) %>%
