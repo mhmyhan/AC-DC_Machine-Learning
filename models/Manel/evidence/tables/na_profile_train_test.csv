@@ -1,0 +1,15 @@
+"feature","na_train","na_test"
+"Cancer.Type.Detailed_Breast",0,2
+"Cancer.Type.Detailed_Breast.Invasive.Ductal.Carcinoma",0,2
+"Cancer.Type.Detailed_Breast.Invasive.Lobular.Carcinoma",0,2
+"Cancer.Type.Detailed_Breast.Invasive.Mixed.Mucinous.Carcinoma",0,2
+"Cancer.Type.Detailed_Breast.Mixed.Ductal.and.Lobular.Carcinoma",0,2
+"Cancer.Type.Detailed_Invasive.Breast.Carcinoma",0,2
+"Cancer.Type.Detailed_Metaplastic.Breast.Cancer",0,2
+"Oncotree.Code_BRCA",0,2
+"Oncotree.Code_BREAST",0,2
+"Oncotree.Code_IDC",0,2
+"Oncotree.Code_ILC",0,2
+"Oncotree.Code_IMMC",0,2
+"Oncotree.Code_MBC",0,2
+"Oncotree.Code_MDLC",0,2
