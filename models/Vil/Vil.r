@@ -111,6 +111,42 @@ metrics <- c(
 cat("\nXGBoost Performance on TEST set:\n")
 print(metrics)
 
+#  Visualizations
+
+library(ggplot2)
+library(xgboost)
+library(pROC)
+
+#  Confusion Matrix
+conf_mat <- table(Predicted = y_pred, Actual = y_test)
+cat("\nConfusion Matrix:\n")
+print(conf_mat)
+
+# Optionally, visualize it
+conf_df <- as.data.frame(conf_mat)
+ggplot(conf_df, aes(x = Actual, y = Predicted, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), color = "white", size = 5) +
+  scale_fill_gradient(low = "steelblue", high = "darkred") +
+  theme_minimal() +
+  ggtitle("Confusion Matrix Heatmap")
+
+# ROC Curve
+roc_obj <- roc(y_test, y_prob)
+plot(roc_obj, col = "blue", lwd = 2, main = "ROC Curve")
+auc_val <- auc(roc_obj)
+cat("\nROC AUC:", auc_val, "\n")
+
+#  Feature Importance
+# Get importance matrix
+importance_matrix <- xgb.importance(model = xgb_model)
+
+# View top features
+head(importance_matrix, 10)
+
+# Plot importance
+xgb.plot.importance(importance_matrix[1:20,], main = "Top 20 Feature Importance")
+
 # -------------------------------
 # Optional: Save model
 # -------------------------------
