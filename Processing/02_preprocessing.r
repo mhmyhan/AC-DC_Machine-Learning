@@ -18,7 +18,7 @@ df <- read_csv(file_path)
 
 cols_to_drop <- c( 
   "Patient ID", # for sure
-  "Nottingham prognostic index", # for not sure
+  #"Nottingham prognostic index", # for not sure
   "Cohort", # for sure 
   "Sex",# all female drop for sure
   "Overall Survival (Months)", # drop if doing relapse
