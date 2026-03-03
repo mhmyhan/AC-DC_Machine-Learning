@@ -8,7 +8,7 @@ library(tidyverse)
 library(tidymodels)
 library(tune)
 
-# Ensure SVM engine exists (run once if needed)
+# Ensure SVM engine exists
 if (!requireNamespace("kernlab", quietly = TRUE)) install.packages("kernlab")
 library(kernlab)
 
@@ -31,7 +31,7 @@ if (!file.exists(RUN_SUMMARY)) {
     script = character(),
     target = character(),
     model = character(),
-    seed = double(),              # <- keep numeric
+    seed = double(),             
     primary_metric = character(),
     metric_value = double(),
     notes = character(),
@@ -75,7 +75,7 @@ X_test  <- read.csv("Data/Training/X_test.csv")
 y_train <- read.csv("Data/Training/y_train.csv")[[1]]
 y_test  <- read.csv("Data/Training/y_test.csv")[[1]]
 
-# ---- Profiling NA (evidence only; does NOT change CSVs) ----
+# ---- Profiling NA ----
 na_report <- tibble(
   feature  = names(X_train),
   na_train = colSums(is.na(X_train)),
@@ -101,7 +101,7 @@ print(table(y_train))
 X_train <- X_train %>% mutate(across(everything(), ~ as.numeric(.x)))
 X_test  <- X_test  %>% mutate(across(everything(), ~ as.numeric(.x)))
 
-# ---- INF profiling (evidence only) ----
+# ---- INF profiling (evidence ) ----
 inf_report <- tibble(
   feature  = names(X_train),
   inf_train = colSums(is.infinite(as.matrix(X_train))),
@@ -127,7 +127,7 @@ if ("Recurred" %in% levels(train_df$y)) {
   test_df  <- test_df  %>% mutate(y = fct_relevel(y, "Not_Recurred", "Recurred"))
 }
 
-# ---- Recipe: train-only imputation + scaling ----
+# ---- train-only imputation + scaling ----
 rec <- recipe(y ~ ., data = train_df) %>%
   step_zv(all_predictors()) %>%
   step_impute_median(all_numeric_predictors()) %>%
