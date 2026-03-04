@@ -1,23 +1,23 @@
 
-# Libraries
-#install.packages("xgboost")
-#install.packages("pROC")
-#install.packages("readr")
+# Author: Vilius
+# Role: Modeling (XGBoost)
+# Version: CV-Optimized + Image Saving
 
 library(pROC)
 library(xgboost)
 library(readr)
-
+library(ggplot2)
+#install.packages("pROC")
+#install.packages("xgboost")
+#install.packages("readr")
+#install.packages("ggplot2")
 set.seed(42)
-# Confirm working directory
-getwd()
-list.files("data/Training")
 
-# table(y_train, useNA = "ifany") # To help debug data
+# Load preprocessed data
 
-#  Load preprocessed data
 
 data_dir <- "data/Training"
+output_dir <- "models/Vil"   # <-- images saved here
 
 X_train <- read_csv(file.path(data_dir, "X_train.csv"), show_col_types = FALSE)
 X_test  <- read_csv(file.path(data_dir, "X_test.csv"),  show_col_types = FALSE)
@@ -28,9 +28,9 @@ y_test  <- read_csv(file.path(data_dir, "y_test.csv"),  show_col_types = FALSE)$
 # Ensure consistent encoding
 y_train <- as.factor(y_train)
 levels_ref <- levels(y_train)
-
 y_test  <- factor(y_test, levels = levels_ref)
 
+# Convert to numeric 0/1
 y_train <- as.numeric(y_train) - 1
 y_test  <- as.numeric(y_test) - 1
 
@@ -43,6 +43,10 @@ stopifnot(sum(is.na(X_train_mat)) == 0)
 stopifnot(sum(is.infinite(X_train_mat)) == 0)
 stopifnot(sum(is.na(y_train)) == 0)
 
+# Optional safety for test data
+X_test_mat[is.na(X_test_mat)] <- 0
+X_test_mat[is.infinite(X_test_mat)] <- 0
+
 # Create DMatrix
 dtrain <- xgb.DMatrix(data = X_train_mat, label = y_train)
 dtest  <- xgb.DMatrix(data = X_test_mat,  label = y_test)
@@ -52,40 +56,56 @@ neg <- sum(y_train == 0)
 pos <- sum(y_train == 1)
 scale_pos_weight <- neg / pos
 
-# Train XGBoost
-set.seed(42)
-train_idx <- sample(seq_len(nrow(X_train_mat)), size = 0.8 * nrow(X_train_mat))
+# XGBoost parameters
 
-dtrain_inner <- xgb.DMatrix(data = X_train_mat[train_idx, ], 
-                            label = y_train[train_idx])
+params <- list(
+  objective = "binary:logistic",
+  eval_metric = c("logloss", "auc"),
+  eta = 0.05,
+  max_depth = 6,
+  subsample = 0.8,
+  colsample_bytree = 0.8,
+  scale_pos_weight = scale_pos_weight
+)
 
-dval <- xgb.DMatrix(data = X_train_mat[-train_idx, ], 
-                    label = y_train[-train_idx])
+# Cross-validation for best nrounds
 
-watchlist <- list(train = dtrain_inner, val = dval)
-
-xgb_model <- xgb.train(
+cv <- xgb.cv(
   params = params,
-  data = dtrain_inner,
+  data = dtrain,
   nrounds = 1000,
-  watchlist = watchlist,
+  nfold = 5,
   early_stopping_rounds = 50,
   verbose = 1
 )
 
-# Evaluate
-thresholds <- seq(0.2, 0.7, by = 0.01)
+best_nrounds <- cv$best_iteration
+if (is.null(best_nrounds) || best_nrounds <= 0) best_nrounds <- 1000
 
-results <- sapply(thresholds, function(t) {
-  pred <- ifelse(y_prob >= t, 1, 0)
-  precision <- sum(pred == 1 & y_test == 1) / sum(pred == 1)
-  recall <- sum(pred == 1 & y_test == 1) / sum(y_test == 1)
+# Train final model
+xgb_model <- xgb.train(
+  params = params,
+  data = dtrain,
+  nrounds = best_nrounds
+)
+
+# Threshold tuning on TRAINING SET ONLY
+
+thresholds <- seq(0.2, 0.7, by = 0.01)
+y_prob_train <- predict(xgb_model, dtrain)
+
+f1_scores <- sapply(thresholds, function(t) {
+  pred <- ifelse(y_prob_train >= t, 1, 0)
+  precision <- sum(pred == 1 & y_train == 1) / sum(pred == 1)
+  recall <- sum(pred == 1 & y_train == 1) / sum(y_train == 1)
   if ((precision + recall) == 0) return(0)
   2 * precision * recall / (precision + recall)
 })
 
-best_t <- thresholds[which.max(results)]
-best_t
+best_t <- thresholds[which.max(f1_scores)]
+cat("Best threshold (from training):", best_t, "\n")
+
+# Evaluate on TEST SET
 
 y_prob <- predict(xgb_model, dtest)
 y_pred <- ifelse(y_prob >= best_t, 1, 0)
@@ -106,48 +126,43 @@ metrics <- c(
   ROC_AUC   = roc_auc
 )
 
-
-
 cat("\nXGBoost Performance on TEST set:\n")
 print(metrics)
 
-#  Visualizations
+# Confusion Matrix + Save Image
 
-library(ggplot2)
-library(xgboost)
-library(pROC)
-
-#  Confusion Matrix
 conf_mat <- table(Predicted = y_pred, Actual = y_test)
 cat("\nConfusion Matrix:\n")
 print(conf_mat)
 
-# Optionally, visualize it
 conf_df <- as.data.frame(conf_mat)
-ggplot(conf_df, aes(x = Actual, y = Predicted, fill = Freq)) +
+
+p_conf <- ggplot(conf_df, aes(x = Actual, y = Predicted, fill = Freq)) +
   geom_tile() +
   geom_text(aes(label = Freq), color = "white", size = 5) +
   scale_fill_gradient(low = "steelblue", high = "darkred") +
   theme_minimal() +
   ggtitle("Confusion Matrix Heatmap")
 
-# ROC Curve
-roc_obj <- roc(y_test, y_prob)
-plot(roc_obj, col = "blue", lwd = 2, main = "ROC Curve")
-auc_val <- auc(roc_obj)
-cat("\nROC AUC:", auc_val, "\n")
+ggsave(file.path(output_dir, "xgb_confusion_matrix.png"), p_conf, width = 6, height = 5)
 
-#  Feature Importance
-# Get importance matrix
+# ROC Curve + Save Image
+
+roc_obj <- roc(y_test, y_prob)
+
+png(file.path(output_dir, "xgb_roc_curve.png"), width = 800, height = 600)
+plot(roc_obj, col = "blue", lwd = 3, main = "ROC Curve")
+dev.off()
+
+# Feature Importance + Save Image
+
 importance_matrix <- xgb.importance(model = xgb_model)
 
-# View top features
-head(importance_matrix, 10)
+p_imp <- xgb.plot.importance(importance_matrix[1:20,], main = "Top 20 Feature Importance")
 
-# Plot importance
-xgb.plot.importance(importance_matrix[1:20,], main = "Top 20 Feature Importance")
+ggsave(file.path(output_dir, "xgb_feature_importance.png"), p_imp, width = 7, height = 6)
 
-# -------------------------------
+
 # Optional: Save model
-# -------------------------------
-# xgb.save(xgb_model, "models/xgb_model.model")
+
+# xgb.save(xgb_model, file.path(output_dir, "xgb_model_cv.model"))
