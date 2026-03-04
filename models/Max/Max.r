@@ -10,16 +10,7 @@ library(pROC)
 library(caret)
 library(stringr)
 
-# Load pre-processed data
-
-DATA <- load_ml_data("Data/Training")
-
-dtrain <- lgb.Dataset(data = )
-
-
-
-
-## FUNCTIONS
+## FUNCTIONS (for readability)
 
 load_ml_data <- function(data_dir) {
   # Check that the directory exists
@@ -39,8 +30,10 @@ load_ml_data <- function(data_dir) {
     stop("One or more required files are missing from the dir.")
   }
   
-  # Load data into a list (organised)
-  data <- lapply(full_paths, read_csv, show_col_types = FALSE)
+  # Load data into a list (more organised)
+  data <- setNames(
+    lapply(full_paths, read_csv, show_col_types = FALSE),
+    names(files))
   
   output <- list(
     X_train = as.matrix(data$X_train),
@@ -53,7 +46,64 @@ load_ml_data <- function(data_dir) {
   return(output)
 }
 
+###
 
+## MODELING
+
+# Load pre-processed data
+DATA <- load_ml_data("Data/Training")
+
+str(DATA)
+names(DATA)
+
+# Create dataset
+dtrain <- lgb.Dataset(data = DATA$X_train, label = DATA$y_train)
+
+# compute class weightings
+neg <- sum(DATA$y_train == 0)
+pos <- sum(DATA$y_train == 1)
+
+scale_pos_weight <- neg/pos
+
+# train model
+default_params <- list(
+  objective = "binary",
+  metric = "auc",
+  learning_rate = 0.05,
+  num_leaves = 31,
+  feature_fraction = 0.8,
+  bagging_fraction = 0.8,
+  bagging_freq = 5,
+  scale_pos_weight = scale_pos_weight
+)
+
+model <- lgb.train(
+  params = default_params,
+  data = dtrain,
+  nrounds = 400,
+  verbose = 1
+)
+
+## EVALUATION
+
+pred_probs <- predict(model, DATA$X_test)
+
+pred_labels <- ifelse(pred_probs > 0.5, 1, 0)
+
+confusionMatrix(
+  as.factor(pred_labels),
+  as.factor(DATA$y_test)
+)
+
+roc_obj <- roc(DATA$y_test, pred_probs)
+auc(roc_obj)
+plot(roc_obj)
+
+## Importance
+# for clinical interpretation / ethical implications
+
+importance <- lgb.importance(model, feature_names = colnames(DATA$X_train))
+lgb.plot.importance(importance, top_n = 20)
 
 
 
