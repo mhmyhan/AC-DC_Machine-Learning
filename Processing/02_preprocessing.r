@@ -71,6 +71,9 @@ cols_to_drop <- c(
   train_raw <- training(split)
   test_raw <- testing(split)
   
+  # Check Class Balance
+
+  
   # Shared recipe
   
   rec <- recipe(train_raw) %>%
