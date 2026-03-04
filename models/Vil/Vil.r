@@ -129,6 +129,16 @@ metrics <- c(
 cat("\nXGBoost Performance on TEST set:\n")
 print(metrics)
 
+metrics_df <- data.frame(
+  Metric = names(metrics),
+  Value  = as.numeric(metrics)
+)
+
+write.csv(metrics_df,
+          file.path(output_dir, "xgb_metrics.csv"),
+          row.names = FALSE)
+
+
 # Confusion Matrix + Save Image
 
 conf_mat <- table(Predicted = y_pred, Actual = y_test)
@@ -158,9 +168,19 @@ dev.off()
 
 importance_matrix <- xgb.importance(model = xgb_model)
 
-p_imp <- xgb.plot.importance(importance_matrix[1:20,], main = "Top 20 Feature Importance")
+# Convert to ggplot manually
+p_imp <- ggplot(importance_matrix[1:20, ],
+                aes(x = reorder(Feature, Gain), y = Gain)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  theme_minimal() +
+  labs(title = "Top 20 Feature Importance (Gain)",
+       x = "Feature",
+       y = "Gain")
 
-ggsave(file.path(output_dir, "xgb_feature_importance.png"), p_imp, width = 7, height = 6)
+ggsave(file.path(output_dir, "xgb_feature_importance.png"),
+       p_imp, width = 7, height = 6)
+
 
 
 # Optional: Save model
