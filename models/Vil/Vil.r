@@ -61,23 +61,30 @@ scale_pos_weight <- neg / pos
 params <- list(
   objective = "binary:logistic",
   eval_metric = c("logloss", "auc"),
-  eta = 0.05,
-  max_depth = 6,
+  eta = 0.03,
+  max_depth = 3,
+  min_child_weight = 3,
   subsample = 0.8,
   colsample_bytree = 0.8,
+  gamma = 1,
+  lambda = 1,
+  alpha = 0.5,
   scale_pos_weight = scale_pos_weight
 )
+
 
 # Cross-validation for best nrounds
 
 cv <- xgb.cv(
   params = params,
   data = dtrain,
-  nrounds = 1000,
+  nrounds = 2000,
   nfold = 5,
-  early_stopping_rounds = 50,
+  stratified = TRUE,
+  early_stopping_rounds = 100,
   verbose = 1
 )
+
 
 best_nrounds <- cv$best_iteration
 if (is.null(best_nrounds) || best_nrounds <= 0) best_nrounds <- 1000
