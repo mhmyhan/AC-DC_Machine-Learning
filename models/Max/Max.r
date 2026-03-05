@@ -36,8 +36,8 @@ load_ml_data <- function(data_dir) {
     names(files))
   
   output <- list(
-    X_train = as.matrix(data$X_train),
-    X_test  = as.matrix(data$X_test),
+    X_train = data.matrix(data$X_train),
+    X_test  = data.matrix(data$X_test),
     y_train = data$y_train$y,
     y_test = data$y_test$y
   )
@@ -73,6 +73,8 @@ pos <- sum(DATA$y_train == 1)
 
 scale_pos_weight <- neg/pos
 
+str(scale_pos_weight)
+
 # train model
 default_params <- list(
   objective = "binary",
@@ -99,8 +101,8 @@ pred_probs <- predict(model, DATA$X_test)
 pred_labels <- ifelse(pred_probs > 0.5, 1, 0)
 
 confusionMatrix(
-  as.factor(pred_labels),
-  as.factor(DATA$y_test)
+  factor(pred_labels, levels = c(0,1)),
+  factor(DATA$y_test, levels = c(0,1))
 )
 
 roc_obj <- roc(DATA$y_test, pred_probs)
@@ -110,7 +112,9 @@ plot(roc_obj)
 ## Importance
 # for clinical interpretation / ethical implications
 
-importance <- lgb.importance(model, feature_names = colnames(DATA$X_train))
+importance <- lgb.importance(model)
+print(importance)
+
 lgb.plot.importance(importance, top_n = 20)
 
 
