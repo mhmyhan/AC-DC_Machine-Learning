@@ -17,18 +17,18 @@ df <- read_csv(file_path)
 # Dropping columns
 
 cols_to_drop <- c( 
-  "Patient ID", # for sure
-  #"Nottingham prognostic index", # for not sure
-  "Cohort", # for sure 
-  "Sex",# all female drop for sure
-  "Overall Survival (Months)", # drop if doing relapse
-  "Relapse Free Status (Months)", # drop if doing relapse
-  "Overall Survival Status"# drop if predicting survival time 
+  "Patient ID", # Irrelevant to data
+  "Cohort", # Exists for clinical bias purposes (Irrelevant to data processing)
+  "Sex", # all female drop for sure
+  "Overall Survival (Months)", # Irrelevant to calculating relapse
+  "Relapse Free Status (Months)", # Irrelevant to calculating relapse
+  "Overall Survival Status", # Temporal
+  "Patient's Vital Status"   # Temporal
   )
 
   df <- df %>% select(-any_of(cols_to_drop))
   
-  #Fix data types
+  # Fix data types
   
   df <- df %>% 
     mutate(
@@ -37,7 +37,7 @@ cols_to_drop <- c(
       !!TARGET := as.factor(.data[[TARGET]])
     )
   
-  #Cleaning
+  # Cleaning
   df <- df %>%
     mutate(`Integrative Cluster` = recode(
       `Integrative Cluster`,
@@ -62,7 +62,7 @@ cols_to_drop <- c(
     filter(!is.na(.data[[TARGET]]))
   
   
-  #Train Split
+  # Train Split
   
   set.seed(42)
   
