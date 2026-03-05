@@ -9,6 +9,7 @@ library(readr)
 library(pROC)
 library(caret)
 library(stringr)
+library(ggplot2)
 
 ## FUNCTIONS (for readability)
 
@@ -46,17 +47,21 @@ load_ml_data <- function(data_dir) {
   return(output)
 }
 
-set.seed(42)
 
-table(DATA$y_train)
-str(DATA$y_train)
+
 
 ###
 
 ## MODELING
 
+# set seed for consistency
+set.seed(42)
+
 # Load pre-processed data
 DATA <- load_ml_data("Data/Training")
+
+table(DATA$y_train)
+str(DATA$y_train)
 
 # Additional pre-processing
 # Convert to binary numerals
@@ -75,6 +80,7 @@ pos <- sum(DATA$y_train == 1)
 
 scale_pos_weight <- neg/pos
 
+print("\nScale Position Weight:")
 str(scale_pos_weight)
 
 # train model
@@ -103,11 +109,27 @@ pred_probs <- predict(model, DATA$X_test)
 pred_labels <- ifelse(pred_probs > 0.5, 1, 0)
 
 # CONFUSION MATRIX
-confusionMatrix(
+cm <- confusionMatrix(
   factor(pred_labels, levels = c(0,1)),
   factor(DATA$y_test, levels = c(0,1)),
-  positive = "1" #make the metrics focus on relapse detection
+  positive = "1"
 )
+
+print(cm)
+
+cm_table <- as.data.frame(cm$table)
+
+
+ggplot(cm_table, aes(Prediction, Reference, fill=Freq)) +
+  geom_tile() +
+  geom_text(aes(label=Freq), color="white", size=6) +
+  scale_fill_gradient(low="steelblue", high="darkred") +
+  labs(
+    title="Confusion Matrix Heatmap",
+    x="Predicted",
+    y="Actual"
+  )
+
 
 ## ROC METRICS
 roc_obj <- roc(DATA$y_test, pred_probs)
@@ -132,7 +154,26 @@ text(0.6,0.2,paste("AUC =", round(auc(roc_obj),3)))
 importance <- lgb.importance(model)
 print(importance)
 
-lgb.plot.importance(importance, top_n = 20)
+lgb.plot.importance(importance,
+                    top_n = 20,
+                    measure = "Gain")
+
+## SHAP
+shap_values <- predict(
+  model,
+  DATA$X_train,
+  type= "contrib"
+)
+
+shap_df <- as.data.frame(shap_values)
+
+shap_long <- stack(shap_df)
+
+ggplot(shap_long, aes(x = values)) +
+  geom_histogram(bins = 50, fill = "steelblue") +
+  facet_wrap(~ ind, scales = "free") +
+  theme_minimal() +
+  labs(title = "SHAP Value Distribution per Feature")
 
 
 
