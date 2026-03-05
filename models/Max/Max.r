@@ -46,6 +46,8 @@ load_ml_data <- function(data_dir) {
   return(output)
 }
 
+set.seed(42)
+
 table(DATA$y_train)
 str(DATA$y_train)
 
@@ -100,14 +102,29 @@ pred_probs <- predict(model, DATA$X_test)
 
 pred_labels <- ifelse(pred_probs > 0.5, 1, 0)
 
+# CONFUSION MATRIX
 confusionMatrix(
   factor(pred_labels, levels = c(0,1)),
-  factor(DATA$y_test, levels = c(0,1))
+  factor(DATA$y_test, levels = c(0,1)),
+  positive = 1 #make the metrics focus on relapse detection
 )
 
+## ROC METRICS
 roc_obj <- roc(DATA$y_test, pred_probs)
 auc(roc_obj)
 plot(roc_obj)
+
+# ROC plot
+plot(
+  roc_obj,
+  col = "blue",
+  lwd = 3,
+  main = "ROC Curve for Breast Cancer Relapse Prediction"
+)
+
+abline(a=0, b=1, lty=2, col="grey")
+text(0.6,0.2,paste("AUC =", round(auc(roc_obj),3)))
+
 
 ## Importance
 # for clinical interpretation / ethical implications
