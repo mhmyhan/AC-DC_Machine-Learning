@@ -106,7 +106,7 @@ pred_labels <- ifelse(pred_probs > 0.5, 1, 0)
 confusionMatrix(
   factor(pred_labels, levels = c(0,1)),
   factor(DATA$y_test, levels = c(0,1)),
-  positive = 1 #make the metrics focus on relapse detection
+  positive = "1" #make the metrics focus on relapse detection
 )
 
 ## ROC METRICS
