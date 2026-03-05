@@ -46,12 +46,20 @@ load_ml_data <- function(data_dir) {
   return(output)
 }
 
+table(DATA$y_train)
+str(DATA$y_train)
+
 ###
 
 ## MODELING
 
 # Load pre-processed data
 DATA <- load_ml_data("Data/Training")
+
+# Additional pre-processing
+# Convert to binary numerals
+DATA$y_train <- ifelse(DATA$y_train == "Recurred", 1, 0)
+DATA$y_test  <- ifelse(DATA$y_test  == "Recurred", 1, 0)
 
 str(DATA)
 names(DATA)
