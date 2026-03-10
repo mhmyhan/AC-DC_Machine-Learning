@@ -10,6 +10,7 @@ library(pROC)
 library(caret)
 library(stringr)
 library(ggplot2)
+library(knitr)
 
 ## FUNCTIONS (for readability)
 
@@ -74,6 +75,22 @@ names(DATA)
 # Create dataset
 dtrain <- lgb.Dataset(data = DATA$X_train, label = DATA$y_train)
 
+## CROSS VALIDATION
+
+cv <- lgb.cv(
+  params = default_params,
+  data = dtrain,
+  nrounds = 400,
+  nfold = 5,
+  stratified = TRUE,
+  early_stopping_rounds = 30,
+  verbose = 1
+)
+
+best_iter <- cv$best_iter
+cat("\nBest iteration from CV:", best_iter, "\n")
+
+
 # compute class weightings
 neg <- sum(DATA$y_train == 0)
 pos <- sum(DATA$y_train == 1)
@@ -98,9 +115,12 @@ default_params <- list(
 model <- lgb.train(
   params = default_params,
   data = dtrain,
-  nrounds = 400,
-  verbose = 1
+  nrounds = best_iter
 )
+
+
+
+###
 
 ## EVALUATION
 
@@ -116,6 +136,26 @@ cm <- confusionMatrix(
 )
 
 print(cm)
+
+## METRICS SUMMARY TABLE
+
+accuracy  <- as.numeric(cm$overall["Accuracy"])
+precision <- as.numeric(cm$byClass["Precision"])
+recall    <- as.numeric(cm$byClass["Recall"])
+f1        <- as.numeric(cm$byClass["F1"])
+
+roc_auc <- as.numeric(auc(roc_obj))
+
+metrics <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","F1_score","ROC_AUC"),
+  Value  = round(c(accuracy, precision, recall, f1, roc_auc),4)
+)
+
+#print 
+cat("\nLightGBM Performance on TEST set:\n")
+print(metrics)
+
+
 
 cm_table <- as.data.frame(cm$table)
 
