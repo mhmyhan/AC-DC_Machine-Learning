@@ -13,10 +13,12 @@ getwd()
 file_path <- "data/Processed/metabric_clean.csv"
 df <- read_csv(file_path)
 
+# Keep rows where "MTS" is NOT found in the ID column
+df <- df[!grepl("MTS", df$`Patient ID`), ]
 
 # Dropping columns
 
-cols_to_drop <- c( 
+cols_to_drop <- c(
   "Patient ID", # Irrelevant to data
   "Cohort", # Exists for clinical bias purposes (Irrelevant to data processing)
   "Sex", # all female drop for sure
