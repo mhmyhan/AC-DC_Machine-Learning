@@ -75,6 +75,38 @@ names(DATA)
 # Create dataset
 dtrain <- lgb.Dataset(data = DATA$X_train, label = DATA$y_train)
 
+# model parameters by version
+old_params <- list(
+  objective = "binary",
+  metric = "auc",
+  learning_rate = 0.05,
+  num_leaves = 31,
+  feature_fraction = 0.8,
+  bagging_fraction = 0.8,
+  bagging_freq = 5,
+  scale_pos_weight = scale_pos_weight
+)
+
+default_params <- list(
+  objective = "binary",
+  metric = "auc",
+  
+  learning_rate = 0.03,
+  num_leaves = 64,
+  max_depth = -1,
+  
+  feature_fraction = 0.85,
+  bagging_fraction = 0.85,
+  bagging_freq = 5,
+  
+  min_data_in_leaf = 20,
+  lambda_l1 = 0.1,
+  lambda_l2 = 0.2,
+  
+  scale_pos_weight = scale_pos_weight
+)
+
+
 ## CROSS VALIDATION
 
 cv <- lgb.cv(
@@ -100,18 +132,8 @@ scale_pos_weight <- neg/pos
 print("\nScale Position Weight:")
 str(scale_pos_weight)
 
-# train model
-default_params <- list(
-  objective = "binary",
-  metric = "auc",
-  learning_rate = 0.05,
-  num_leaves = 31,
-  feature_fraction = 0.8,
-  bagging_fraction = 0.8,
-  bagging_freq = 5,
-  scale_pos_weight = scale_pos_weight
-)
 
+# train model
 model <- lgb.train(
   params = default_params,
   data = dtrain,
@@ -128,7 +150,9 @@ pred_probs <- predict(model, DATA$X_test)
 
 pred_labels <- ifelse(pred_probs > 0.5, 1, 0)
 
-# CONFUSION MATRIX
+## CONFUSION MATRIX
+# True Positives and True Negatives are good
+# !In medicine, FP's are not as bad as FN's!
 cm <- confusionMatrix(
   factor(pred_labels, levels = c(0,1)),
   factor(DATA$y_test, levels = c(0,1)),
@@ -137,28 +161,7 @@ cm <- confusionMatrix(
 
 print(cm)
 
-## METRICS SUMMARY TABLE
-
-accuracy  <- as.numeric(cm$overall["Accuracy"])
-precision <- as.numeric(cm$byClass["Precision"])
-recall    <- as.numeric(cm$byClass["Recall"])
-f1        <- as.numeric(cm$byClass["F1"])
-
-roc_auc <- as.numeric(auc(roc_obj))
-
-metrics <- data.frame(
-  Metric = c("Accuracy","Precision","Recall","F1_score","ROC_AUC"),
-  Value  = round(c(accuracy, precision, recall, f1, roc_auc),4)
-)
-
-#print 
-cat("\nLightGBM Performance on TEST set:\n")
-print(metrics)
-
-
-
 cm_table <- as.data.frame(cm$table)
-
 
 ggplot(cm_table, aes(Prediction, Reference, fill=Freq)) +
   geom_tile() +
@@ -171,12 +174,11 @@ ggplot(cm_table, aes(Prediction, Reference, fill=Freq)) +
   )
 
 
-## ROC METRICS
+## ROC
 roc_obj <- roc(DATA$y_test, pred_probs)
 auc(roc_obj)
 plot(roc_obj)
 
-# ROC plot
 plot(
   roc_obj,
   col = "blue",
@@ -187,8 +189,17 @@ plot(
 abline(a=0, b=1, lty=2, col="grey")
 text(0.6,0.2,paste("AUC =", round(auc(roc_obj),3)))
 
+## Precision-Recall Curve 
+# (help uncover problems with class imbalance)
+pr <- pr.curve(
+  scores.class0 = pred_probs[DATA$y_test == 1],
+  scores.class1 = pred_probs[DATA$y_test == 0],
+  curve = TRUE
+)
 
-## Importance
+plot(pr, main = "Precision-Recall Curve")
+
+## IMPORTANCE
 # for clinical interpretation / ethical implications
 
 importance <- lgb.importance(model)
@@ -215,5 +226,22 @@ ggplot(shap_long, aes(x = values)) +
   theme_minimal() +
   labs(title = "SHAP Value Distribution per Feature")
 
+
+## METRICS SUMMARY TABLE
+accuracy  <- as.numeric(cm$overall["Accuracy"])
+precision <- as.numeric(cm$byClass["Precision"])
+recall    <- as.numeric(cm$byClass["Recall"])
+f1        <- as.numeric(cm$byClass["F1"])
+
+roc_auc <- as.numeric(auc(roc_obj))
+
+metrics <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","F1_score","ROC_AUC"),
+  Value  = round(c(accuracy, precision, recall, f1, roc_auc),4)
+)
+
+#print 
+cat("\nLightGBM Performance on TEST set:\n")
+print(metrics)
 
 
