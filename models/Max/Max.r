@@ -7,6 +7,7 @@
 library(lightgbm)
 library(readr)
 library(pROC)
+library(PRROC)
 library(caret)
 library(stringr)
 library(ggplot2)
@@ -64,6 +65,7 @@ DATA <- load_ml_data("Data/Training")
 table(DATA$y_train)
 str(DATA$y_train)
 
+
 # Additional pre-processing
 # Convert to binary numerals
 DATA$y_train <- ifelse(DATA$y_train == "Recurred", 1, 0)
@@ -72,8 +74,21 @@ DATA$y_test  <- ifelse(DATA$y_test  == "Recurred", 1, 0)
 str(DATA)
 names(DATA)
 
+
+# compute class weightings
+neg <- sum(DATA$y_train == 0)
+pos <- sum(DATA$y_train == 1)
+
+scale_pos_weight <- neg/pos
+
+print("\nScale Position Weight:")
+str(scale_pos_weight)
+
+
+
 # Create dataset
 dtrain <- lgb.Dataset(data = DATA$X_train, label = DATA$y_train)
+
 
 # model parameters by version
 old_params <- list(
@@ -123,14 +138,6 @@ best_iter <- cv$best_iter
 cat("\nBest iteration from CV:", best_iter, "\n")
 
 
-# compute class weightings
-neg <- sum(DATA$y_train == 0)
-pos <- sum(DATA$y_train == 1)
-
-scale_pos_weight <- neg/pos
-
-print("\nScale Position Weight:")
-str(scale_pos_weight)
 
 
 # train model
@@ -177,7 +184,6 @@ ggplot(cm_table, aes(Prediction, Reference, fill=Freq)) +
 ## ROC
 roc_obj <- roc(DATA$y_test, pred_probs)
 auc(roc_obj)
-plot(roc_obj)
 
 plot(
   roc_obj,
@@ -197,7 +203,20 @@ pr <- pr.curve(
   curve = TRUE
 )
 
-plot(pr, main = "Precision-Recall Curve")
+pr_df <- data.frame(
+  Recall = pr$curve[,1],
+  Precision = pr$curve[,2]
+)
+
+ggplot(pr_df, aes(x = Recall, y = Precision)) +
+  geom_line(color = "darkred", size = 1.2) +
+  theme_minimal() +
+  labs(
+    title = "Precision-Recall Curve",
+    subtitle = paste("AUC =", round(pr$auc.integral,3)),
+    x = "Recall",
+    y = "Precision"
+  )
 
 ## IMPORTANCE
 # for clinical interpretation / ethical implications
