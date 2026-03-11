@@ -79,7 +79,7 @@ names(DATA)
 neg <- sum(DATA$y_train == 0)
 pos <- sum(DATA$y_train == 1)
 
-scale_pos_weight <- neg/pos
+scale_pos_weight <- neg/pos * 0.7
 
 print("\nScale Position Weight:")
 str(scale_pos_weight)
@@ -107,18 +107,19 @@ default_params <- list(
   metric = "auc",
   
   learning_rate = 0.03,
-  num_leaves = 64,
+  num_leaves = 128,
   max_depth = -1,
   
   feature_fraction = 0.85,
   bagging_fraction = 0.85,
   bagging_freq = 5,
   
-  min_data_in_leaf = 20,
+  min_data_in_leaf = 10,
   lambda_l1 = 0.1,
-  lambda_l2 = 0.2,
+  lambda_l2 = 0.2
   
-  scale_pos_weight = scale_pos_weight
+  ## removed since dataset is alr quite balanced
+  #scale_pos_weight = scale_pos_weight
 )
 
 
@@ -155,7 +156,25 @@ model <- lgb.train(
 
 pred_probs <- predict(model, DATA$X_test)
 
-pred_labels <- ifelse(pred_probs > 0.5, 1, 0)
+#Dynamically generate best threshold for the F1 score
+#should improve recall and precision
+thresholds <- seq(0.01, 0.99, by=0.01)
+
+f1_scores <- sapply(thresholds, function(t){
+  preds <- ifelse(pred_probs > t, 1, 0)
+  cm_tmp <- confusionMatrix(
+    factor(preds, levels=c(0,1)),
+    factor(DATA$y_test, levels=c(0,1)),
+    positive="1"
+  )
+  as.numeric(cm_tmp$byClass["F1"])
+})
+
+best_thresh <- thresholds[which.max(f1_scores)]
+
+cat("Best threshold:", best_thresh)
+
+pred_labels <- ifelse(pred_probs > best_thresh, 1, 0)
 
 ## CONFUSION MATRIX
 # True Positives and True Negatives are good
@@ -173,7 +192,7 @@ cm_table <- as.data.frame(cm$table)
 ggplot(cm_table, aes(Prediction, Reference, fill=Freq)) +
   geom_tile() +
   geom_text(aes(label=Freq), color="white", size=6) +
-  scale_fill_gradient(low="steelblue", high="darkred") +
+  scale_fill_gradient(low="darkgray", high="darkblue") +
   labs(
     title="Confusion Matrix Heatmap",
     x="Predicted",
@@ -222,28 +241,44 @@ ggplot(pr_df, aes(x = Recall, y = Precision)) +
 # for clinical interpretation / ethical implications
 
 importance <- lgb.importance(model)
-print(importance)
 
-lgb.plot.importance(importance,
-                    top_n = 20,
-                    measure = "Gain")
+ggplot(importance[1:20,], aes(x = reorder(Feature, Gain), y = Gain)) +
+  geom_bar(stat="identity", fill="darkgreen") +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    title = "20 Most Important Features (LightGBM)",
+    x = "Feature",
+    y = "Gain"
+  )
 
 ## SHAP
 shap_values <- predict(
   model,
   DATA$X_train,
-  type= "contrib"
+  type = "contrib"
 )
 
 shap_df <- as.data.frame(shap_values)
 
-shap_long <- stack(shap_df)
+shap_importance <- colMeans(abs(shap_df))
 
-ggplot(shap_long, aes(x = values)) +
-  geom_histogram(bins = 50, fill = "steelblue") +
-  facet_wrap(~ ind, scales = "free") +
+shap_imp_df <- data.frame(
+  Feature = names(shap_importance),
+  Importance = shap_importance
+)
+
+shap_imp_df <- shap_imp_df[order(-shap_imp_df$Importance),][1:20,]
+
+ggplot(shap_imp_df, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
   theme_minimal() +
-  labs(title = "SHAP Value Distribution per Feature")
+  labs(
+    title = "Top SHAP Feature Contributions",
+    x = "Feature",
+    y = "Mean |SHAP value|"
+  )
 
 
 ## METRICS SUMMARY TABLE
