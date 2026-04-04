@@ -1,0 +1,28 @@
+column,missing_rate
+Tumor Stage,0.2595766129032258
+3-Gene classifier subtype,0.11139112903225806
+Mutation Count,0.06098790322580645
+Primary Tumor Laterality,0.05796370967741935
+Neoplasm Histologic Grade,0.04435483870967742
+Lymph nodes examined positive,0.038306451612903226
+Cellularity,0.034274193548387094
+Tumor Other Histologic Subtype,0.023185483870967742
+ER status measured by IHC,0.021673387096774195
+Type of Breast Surgery,0.015120967741935484
+Tumor Size,0.01310483870967742
+Chemotherapy,0.0025201612903225806
+Pam50 + Claudin-low subtype,0.0025201612903225806
+HER2 status measured by SNP6,0.0025201612903225806
+HER2 Status,0.0025201612903225806
+Hormone Therapy,0.0025201612903225806
+Inferred Menopausal State,0.0025201612903225806
+Integrative Cluster,0.0025201612903225806
+PR Status,0.0025201612903225806
+Radio Therapy,0.0025201612903225806
+Nottingham prognostic index,5.040322580645161e-4
+Age at Diagnosis,0
+Cancer Type,0
+Cancer Type Detailed,0
+ER Status,0
+Oncotree Code,0
+Relapse Free Status,0
