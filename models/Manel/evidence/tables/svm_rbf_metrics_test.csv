@@ -1,8 +1,9 @@
 .metric,.estimator,.estimate
-accuracy,binary,0.8617234468937875
-bal_accuracy,binary,0.8283582089552239
-f_meas,binary,0.8962406015037594
-sens,binary,1
-spec,binary,0.6567164179104478
-roc_auc,binary,0.1476343116631607
-pr_auc,binary,0.41690035120456775
+roc_auc,binary,0.6310927466049058
+pr_auc,binary,0.5385990662308804
+accuracy,binary,0.6070528967254408
+bal_accuracy,binary,0.5925097378671439
+precision,binary,0.515527950310559
+sens,binary,0.515527950310559
+spec,binary,0.6694915254237288
+f_meas,binary,0.515527950310559

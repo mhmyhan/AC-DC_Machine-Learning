@@ -13,6 +13,42 @@ getwd()
 file_path <- "data/Processed/metabric_clean.csv"
 df <- read_csv(file_path)
 
+#audit MTS rows before exclusion
+
+mts_audit <- df %>%
+  mutate(has_MTS = grepl("MTS", `Patient ID`)) %>%
+  mutate(
+    row_missing_n = rowSums(across(everything(), ~ is.na(.) | . == "")),
+    row_missing_pct = row_missing_n / ncol(.)
+  )
+
+mts_count <- mts_audit %>%
+  count(has_MTS)
+
+mts_relapse <- mts_audit %>%
+  count(has_MTS, .data[[TARGET]]) %>%
+  group_by(has_MTS) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup()
+
+mts_missing_summary <- mts_audit %>%
+  group_by(has_MTS) %>%
+  summarise(
+    n = n(),
+    avg_missing_n = mean(row_missing_n),
+    median_missing_n = median(row_missing_n),
+    avg_missing_pct = mean(row_missing_pct),
+    missing_target = mean(is.na(.data[[TARGET]]) | .data[[TARGET]] == ""),
+    missing_tumor_stage = mean(is.na(`Tumor Stage`) | `Tumor Stage` == ""),
+    missing_cellularity = mean(is.na(Cellularity) | Cellularity == ""),
+    missing_chemo = mean(is.na(Chemotherapy) | Chemotherapy == ""),
+    missing_pr = mean(is.na(`PR Status`) | `PR Status` == "")
+  )
+
+write_csv(mts_count, "evidence/tables/mts_count.csv")
+write_csv(mts_relapse, "evidence/tables/mts_relapse_distribution.csv")
+write_csv(mts_missing_summary, "evidence/tables/mts_missingness_summary.csv")
+
 # Keep rows where "MTS" is NOT found in the ID column
 df <- df[!grepl("MTS", df$`Patient ID`), ]
 
