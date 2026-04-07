@@ -80,7 +80,12 @@ recall <- ifelse(sum(y_true == 1) == 0, 0,
 f1_score <- ifelse((precision + recall) == 0, 0,
                    2 * precision * recall / (precision + recall))
 
-roc_auc <- as.numeric(roc(y_true, y_prob)$auc)
+if (length(unique(y_true)) < 2) {
+  warning("ROC AUC cannot be computed: only one class present in y_true")
+  roc_auc <- NA
+} else {
+  roc_auc <- as.numeric(roc(y_true, y_prob)$auc)
+}
 
 metrics <- c(
   Accuracy = accuracy,
