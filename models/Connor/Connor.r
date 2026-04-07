@@ -59,23 +59,38 @@ y_prob <- predict(rf_model, newdata = test_data, type = "prob")[,2]
 
 accuracy  <- mean(y_pred == y_test)
 
-precision <- sum(y_pred == 1 & y_test == 1) / sum(y_pred == 1)
+# ----- Metrics Calculation -----
 
-recall    <- sum(y_pred == 1 & y_test == 1) / sum(y_test == 1)
+# Convert factors to numeric (0/1) for safe calculations
+y_true <- as.numeric(as.character(y_test))
+y_pred_num <- as.numeric(as.character(y_pred))
 
-f1_score  <- 2 * precision * recall / (precision + recall)
+# Accuracy
+accuracy <- mean(y_pred_num == y_true)
 
-roc_auc   <- as.numeric(roc(y_test, y_prob)$auc)
+# Precision
+precision <- ifelse(sum(y_pred_num == 1) == 0, 0,
+                    sum(y_pred_num == 1 & y_true == 1) / sum(y_pred_num == 1))
+
+# Recall
+recall <- ifelse(sum(y_true == 1) == 0, 0,
+                 sum(y_pred_num == 1 & y_true == 1) / sum(y_true == 1))
+
+# F1 Score
+f1_score <- ifelse((precision + recall) == 0, 0,
+                   2 * precision * recall / (precision + recall))
+
+roc_auc <- as.numeric(roc(y_true, y_prob)$auc)
 
 metrics <- c(
-  Accuracy  = accuracy,
+  Accuracy = accuracy,
   Precision = precision,
-  Recall    = recall,
-  F1_score  = f1_score,
-  ROC_AUC   = roc_auc
+  Recall = recall,
+  F1_Score = f1_score,
+  ROC_AUC = roc_auc
 )
 
-cat("\nRandom Forest Performance:\n")
+cat("\nRandom Forest Metrics:\n")
 print(metrics)
 
 metrics_df <- data.frame(

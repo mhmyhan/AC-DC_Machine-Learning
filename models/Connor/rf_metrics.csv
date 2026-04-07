@@ -1,6 +1,6 @@
 "Metric","Value"
-"Accuracy",0.644836272040302
+"Accuracy",NA
 "Precision",NA
 "Recall",NA
-"F1_score",NA
-"ROC_AUC",0.643580903252974
+"F1_Score",NA
+"ROC_AUC",NA
