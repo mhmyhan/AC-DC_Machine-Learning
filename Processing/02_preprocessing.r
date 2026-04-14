@@ -97,7 +97,22 @@ cols_to_drop <- c(
     }))
   
   df <- df %>%
-    filter(!is.na(.data[[TARGET]]))
+    filter(!is.na(.data[[TARGET]]) & .data[[TARGET]] != "")
+  
+  class_balance_full <- df %>%
+    count(.data[[TARGET]]) %>%
+    mutate(prop = n / sum(n))
+  
+  write_csv(class_balance_full, "evidence/tables/class_balance_full.csv")
+  
+  # before split missingness summary
+  
+  missing_summary <- df %>%
+    summarise(across(everything(), ~ mean(is.na(.) | . == ""))) %>%
+    pivot_longer(everything(), names_to = "column", values_to = "missing_rate") %>%
+    arrange(desc(missing_rate))
+  
+  write_csv(missing_summary, "evidence/tables/missing_summary.csv")
   
   
   # Train Split
@@ -110,7 +125,16 @@ cols_to_drop <- c(
   test_raw <- testing(split)
   
   # Check Class Balance
-
+  train_balance <- train_raw %>%
+    count(.data[[TARGET]]) %>%
+    mutate(prop = n / sum(n))
+  
+  test_balance <- test_raw %>%
+    count(.data[[TARGET]]) %>%
+    mutate(prop = n / sum(n))
+  
+  write_csv(train_balance, "evidence/tables/train_class_balance.csv")
+  write_csv(test_balance, "evidence/tables/test_class_balance.csv")
   
   # Shared recipe
   

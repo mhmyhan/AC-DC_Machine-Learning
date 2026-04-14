@@ -2,4 +2,4 @@ model,Accuracy,Precision,Recall,F1,ROC-AUC,source_status
 SVM RBF (Manel),0.6071,0.5155,0.5155,0.5155,0.6311,loaded
 XGBoost (Vilius),0.537074148296593,0.451612903225806,0.696517412935323,0.547945205479452,0.608868409629704,loaded
 Max model,NA,NA,NA,NA,NA,images_only_no_csv
-Connor model,NA,NA,NA,NA,NA,not_submitted_yet
+Random Forest (Connor),NA,NA,NA,NA,NA,loaded
