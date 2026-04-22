@@ -80,16 +80,10 @@ max_model <- tibble(
   source_status = "images_only_no_csv"
 )
 
-# ---------- Connor ----------
-#same for connor
-connor <- tibble(
-  model = "Connor model",
-  Accuracy = NA_real_,
-  Precision = NA_real_,
-  Recall = NA_real_,
-  F1 = NA_real_,
-  `ROC-AUC` = NA_real_,
-  source_status = "not_submitted_yet"
+# ---------- Connor Random Forest ----------
+connor <- read_metric_summary(
+  "models/Connor/rf_metrics.csv",
+  "Random Forest (Connor)"
 )
 
 # ---------- Combine ----------
